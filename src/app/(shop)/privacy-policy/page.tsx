@@ -65,7 +65,7 @@ const sections = [
     title: "8. Your Rights",
     content: [
       "You have the right to access, correct, or delete the personal information we hold about you. You may also object to or restrict certain processing of your data, or request that we transfer your data to another service provider.",
-      "To exercise any of these rights, please contact us at support@kavengo.in. We will respond to your request within 30 days.",
+      "To exercise any of these rights, please contact us at info@kavengo.com. We will respond to your request within 30 days.",
     ],
   },
   {
@@ -77,7 +77,7 @@ const sections = [
   {
     title: "10. Contact Us",
     content: [
-      "If you have any questions, concerns, or requests regarding this Privacy Policy, please contact us at: support@kavengo.in. You may also reach us through our Support page. We are always happy to help.",
+      "If you have any questions, concerns, or requests regarding this Privacy Policy, please contact us at: info@kavengo.com. You may also reach us through our Support page. We are always happy to help.",
     ],
   },
 ];

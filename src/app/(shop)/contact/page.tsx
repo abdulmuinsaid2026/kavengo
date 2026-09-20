@@ -83,9 +83,14 @@ export default function ContactPage() {
                                     </div>
                                     <div>
                                         <p className="font-medium text-stone-900">Email Inquiries</p>
-                                        <a href="mailto:support@kavengo.com" className="text-stone-600 hover:text-stone-900 transition-colors">
-                                            support@kavengo.com
-                                        </a>
+                                        <div className="flex flex-col gap-0.5 mt-0.5">
+                                            <a href="mailto:info@kavengo.com" className="text-stone-600 hover:text-stone-900 transition-colors">
+                                                info@kavengo.com
+                                            </a>
+                                            <a href="mailto:orders@kavengo.com" className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
+                                                orders@kavengo.com (Orders & Tracking)
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
 

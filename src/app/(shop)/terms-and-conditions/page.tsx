@@ -80,7 +80,7 @@ const sections = [
   {
     title: "10. Contact Us",
     content: [
-      "If you have any questions or concerns regarding these Terms and Conditions, please reach out to us via our Support page or email us at support@kavengo.in. We are happy to help you.",
+      "If you have any questions or concerns regarding these Terms and Conditions, please reach out to us via our Support page or email us at info@kavengo.com. We are happy to help you.",
     ],
   },
 ];
