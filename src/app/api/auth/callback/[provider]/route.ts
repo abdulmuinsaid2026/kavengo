@@ -23,7 +23,12 @@ export async function GET(req: NextRequest, context: RouteContext) {
     if (state) {
         try {
             const decoded = JSON.parse(Buffer.from(state, 'base64url').toString('utf-8'));
-            if (decoded.returnUrl) returnUrl = decoded.returnUrl;
+            if (decoded.returnUrl) {
+                const raw = String(decoded.returnUrl).trim();
+                if (raw.startsWith('/') && !raw.startsWith('//')) {
+                    returnUrl = raw;
+                }
+            }
             if (decoded.mode) mode = decoded.mode;
         } catch {
             // Keep default returnUrl
@@ -234,9 +239,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
         );
 
         const authData = backendRes.data;
-        const targetRedirect = returnUrl.startsWith('http')
-            ? returnUrl
-            : new URL(returnUrl, origin).toString();
+        const targetRedirect = new URL(returnUrl, origin).toString();
 
         const response = NextResponse.redirect(targetRedirect);
 

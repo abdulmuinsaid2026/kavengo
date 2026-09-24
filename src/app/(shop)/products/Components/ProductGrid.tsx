@@ -102,23 +102,34 @@ const ProductGrid = ({
       setOffset(0);
       setHasMore(true);
 
-      productServices.getAllProducts(buildFilters(0, selectedCategoryId, sortBy, priceRange, searchQueryProp)).then((result) => {
-         if (cancelled) return;
-         if (result.success) {
-            const data = result.data ?? [];
-            const seen = new Set<number>();
-            const unique = data.filter(p => {
-               if (seen.has(p.productId)) return false;
-               seen.add(p.productId);
-               return true;
-            });
-            setProducts(unique);
-            setOffset(data.length);
-            setHasMore(data.length === PAGE_SIZE);
-         }
-         setIsInitialLoading(false);
-         isFetchingRef.current = false;
-      });
+      productServices.getAllProducts(buildFilters(0, selectedCategoryId, sortBy, priceRange, searchQueryProp))
+         .then((result) => {
+            if (cancelled) return;
+            if (result.success) {
+               const data = result.data ?? [];
+               const seen = new Set<number>();
+               const unique = data.filter(p => {
+                  if (seen.has(p.productId)) return false;
+                  seen.add(p.productId);
+                  return true;
+               });
+               setProducts(unique);
+               setOffset(data.length);
+               setHasMore(data.length === PAGE_SIZE);
+            }
+         })
+         .catch((err) => {
+            if (!cancelled) {
+               console.error("Failed to load products:", err);
+               setProducts([]);
+            }
+         })
+         .finally(() => {
+            if (!cancelled) {
+               setIsInitialLoading(false);
+               isFetchingRef.current = false;
+            }
+         });
 
       return () => { cancelled = true; };
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,24 +167,28 @@ const ProductGrid = ({
       if (isFetchingRef.current || !hasMore) return;
       isFetchingRef.current = true;
       setIsLoadingMore(true);
-
-      const result = await productServices.getAllProducts(buildFilters(offset, selectedCategoryId, sortBy, priceRange, searchQueryProp));
-      if (result.success) {
-         const data = result.data ?? [];
-         if (data.length === 0) {
-            setHasMore(false);
-         } else {
-            setProducts(prev => {
-               const existingIds = new Set(prev.map(p => p.productId));
-               const uniqueNew = data.filter(p => !existingIds.has(p.productId));
-               return [...prev, ...uniqueNew];
-            });
-            setOffset(prev => prev + data.length);
-            setHasMore(data.length === PAGE_SIZE);
+      try {
+         const result = await productServices.getAllProducts(buildFilters(offset, selectedCategoryId, sortBy, priceRange, searchQueryProp));
+         if (result.success) {
+            const data = result.data ?? [];
+            if (data.length === 0) {
+               setHasMore(false);
+            } else {
+               setProducts(prev => {
+                  const existingIds = new Set(prev.map(p => p.productId));
+                  const uniqueNew = data.filter(p => !existingIds.has(p.productId));
+                  return [...prev, ...uniqueNew];
+               });
+               setOffset(prev => prev + data.length);
+               setHasMore(data.length === PAGE_SIZE);
+            }
          }
+      } catch (err) {
+         console.error("Failed to load more products:", err);
+      } finally {
+         setIsLoadingMore(false);
+         isFetchingRef.current = false;
       }
-      setIsLoadingMore(false);
-      isFetchingRef.current = false;
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [offset, hasMore, selectedCategoryId, sortBy, priceMin, priceMax, searchQueryProp]);
 

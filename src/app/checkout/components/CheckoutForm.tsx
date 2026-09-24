@@ -160,9 +160,6 @@ export default function CheckoutForm({
     };
 
     const handleSubmit = (data: FieldValues) => {
-        console.log("=== PAY CLICKED — form data:", data);
-        console.log("=== isGuestUser:", isGuestUser);
-
         if (isGuestUser) {
             if (!data.guestFullName || data.guestFullName.trim().length < 2) {
                 toast.error("Please enter your full name.");

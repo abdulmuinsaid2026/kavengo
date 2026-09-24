@@ -22,7 +22,6 @@ function isTokenExpired(token: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('token')?.value;
-  const refreshToken = request.cookies.get('refresh_token')?.value;
   const userRole = request.cookies.get('user_role')?.value;
 
   const isAuthenticated = Boolean(token && !isTokenExpired(token));
@@ -72,21 +71,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 5. Add auth headers for API routes to enable server-side token refresh
-  const response = NextResponse.next();
-
-  // Pass token info to downstream API routes via headers
-  if (token) {
-    response.headers.set('x-auth-token', token);
-    if (refreshToken) {
-      response.headers.set('x-refresh-token', refreshToken);
-    }
-    if (userRole) {
-      response.headers.set('x-user-role', userRole);
-    }
-  }
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

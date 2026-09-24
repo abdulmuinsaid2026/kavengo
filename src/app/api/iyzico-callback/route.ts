@@ -4,19 +4,21 @@ const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3
 const BACKEND_URL = process.env.SERVER_URL || 'http://localhost:8080';
 
 function buildRedirectHtml(redirectUrl: string): string {
+  const safeJsonUrl = JSON.stringify(redirectUrl);
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"/></head>
 <body>
 <script>
   try {
+    var target = ${safeJsonUrl};
     if (window.top !== window.self) {
-      window.top.location.href = '${redirectUrl}';
+      window.top.location.href = target;
     } else {
-      window.location.href = '${redirectUrl}';
+      window.location.href = target;
     }
   } catch(e) {
-    window.location.href = '${redirectUrl}';
+    window.location.href = ${safeJsonUrl};
   }
 </script>
 </body>
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest) {
         const trackingQuery = data.trackingNumber ? `&trackingNumber=${encodeURIComponent(data.trackingNumber)}` : '';
         redirectUrl = `${FRONTEND_URL}/orders/${data.orderId}?payment=success${trackingQuery}`;
       } else {
-        redirectUrl = `${FRONTEND_URL}/checkout?payment=failed&reason=${data.reason || 'confirmation_failed'}`;
+        redirectUrl = `${FRONTEND_URL}/checkout?payment=failed&reason=${encodeURIComponent(data.reason || 'confirmation_failed')}`;
       }
     } catch {
       redirectUrl = `${FRONTEND_URL}/checkout?payment=failed&reason=server_error`;

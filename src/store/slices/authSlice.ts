@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as authServices from "@/services/auth";
 import * as userServices from "@/services/user";
@@ -36,9 +37,6 @@ export const login = createAsyncThunk<TokenPayload, LoginPayload, { rejectValue:
 export const getMyInformation = createAsyncThunk(
     'auth/getMyInformation',
     async (_, { rejectWithValue }) => {
-        if (typeof document !== 'undefined' && !document.cookie.includes('token=')) {
-            return rejectWithValue('Not logged in');
-        }
         try {
             const response = await authServices.me();
             if (response.success)
@@ -139,17 +137,18 @@ const authSlice = createSlice({
             .addCase(saveMyInformation.fulfilled, (state, action) => {
                 state.loading = false;
                 state.authenticated = true;
-                state.user = {
-                    ...state.user!,
-                    fullName: action.payload.fullName || state.user!.fullName,
-                    address: {
-                        ...state.user!.address,
-                        street: action.payload.address?.street || state.user!.address.street,
-                        city: action.payload.address?.city || state.user!.address.city,
-                        country: action.payload.address?.country || state.user!.address.country,
-                        pincode: action.payload.address?.pincode || state.user!.address.pincode,
-                    },
-                };
+                if (state.user) {
+                    state.user = {
+                        ...state.user,
+                        fullName: action.payload.fullName || state.user.fullName,
+                        address: {
+                            ...(state.user.address || {}),
+                            ...(action.payload.address || {}),
+                        } as any,
+                    };
+                } else {
+                    state.user = action.payload as any;
+                }
             })
             .addCase(saveMyInformation.rejected, (state, action) => {
                 state.loading = false;

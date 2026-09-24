@@ -126,20 +126,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         if (loading) return;
+        let timer: NodeJS.Timeout | null = null;
+
         if (!isAuthorized) {
             toast.error('You are not authorized to access the admin area.');
             router.replace('/admin/login');
         } else {
             const expiresAt = localStorage.getItem("expiresAt");
-            if (expiresAt === null)
-                return;
-            const expiresIn = parseInt(expiresAt) - Date.now();
-            setTimeout(() => {
-                toast('Your session has expired!', { icon: null, richColors: true });
-                dispatch(logout());
-                router.replace('/admin/login');
-            }, expiresIn);
+            if (expiresAt) {
+                const parsed = parseInt(expiresAt);
+                if (!isNaN(parsed)) {
+                    const expiresIn = parsed - Date.now();
+                    if (expiresIn > 0) {
+                        timer = setTimeout(() => {
+                            toast('Your session has expired!', { icon: null, richColors: true });
+                            dispatch(logout());
+                            router.replace('/admin/login');
+                        }, expiresIn);
+                    }
+                }
+            }
         }
+
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
     }, [loading, isAuthorized]);
 
     if (loading || !isAuthorized) {

@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import * as authServices from "@/services/auth";
 
 function ResetPasswordContent() {
   const [newPassword, setNewPassword] = useState('');
@@ -13,6 +14,7 @@ function ResetPasswordContent() {
   const router = useRouter();
 
   const searchParams = useSearchParams();
+  const token = searchParams.get('token') || '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,21 +22,31 @@ function ResetPasswordContent() {
     setError('');
     setSuccess('');
 
+    if (!token) {
+      setError('Password reset token is missing or invalid.');
+      setIsLoading(false);
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
 
-
     try {
-      setSuccess('Password has been reset successfully');
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 1000);
+      const res = await authServices.resetPassword({ token, newPassword });
+      if (res.success) {
+        setSuccess('Password has been reset successfully');
+        setTimeout(() => {
+          router.push('/auth/login');
+        }, 1500);
+      } else {
+        setError(res.error || 'Failed to reset password. The link may have expired.');
+      }
     } catch (err: any) {
       console.error(err);
-      setError(err?.response?.data?.message || 'Failed to reset password. Please try again.');
+      setError(err?.response?.data?.message || err?.message || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }

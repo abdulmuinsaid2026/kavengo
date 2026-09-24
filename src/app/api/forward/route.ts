@@ -57,14 +57,20 @@ function canRequest(key: string): boolean {
   return true;
 }
 
+interface ForwardPayload {
+  path: string;
+  method?: string;
+  body?: unknown;
+}
+
 async function forwardRequest(
-  req: NextRequest,
+  payload: ForwardPayload,
   retryCount = 0
 ): Promise<NextResponse> {
   const MAX_RETRIES = 2;
   const REQUEST_TIMEOUT = 10000; // 10 seconds
 
-  const { path, method = 'GET', body } = await req.json();
+  const { path, method = 'GET', body } = payload;
   const token = (await cookies()).get('token')?.value;
 
   // Skip auth for public endpoints
@@ -203,7 +209,7 @@ async function forwardRequest(
             }
 
             // Retry original request with new token
-            return forwardRequest(req, retryCount + 1);
+            return forwardRequest(payload, retryCount + 1);
           }
         }
       } catch {
@@ -247,7 +253,7 @@ async function forwardRequest(
 
     if (retryCount < MAX_RETRIES) {
       await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
-      return forwardRequest(req, retryCount + 1);
+      return forwardRequest(payload, retryCount + 1);
     }
 
     return new NextResponse(JSON.stringify({ message: 'Request failed after retries' }), {
@@ -258,5 +264,13 @@ async function forwardRequest(
 }
 
 export async function POST(req: NextRequest) {
-  return forwardRequest(req);
+  try {
+    const payload = await req.json();
+    return forwardRequest(payload);
+  } catch {
+    return new NextResponse(JSON.stringify({ message: 'Invalid JSON request body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }
