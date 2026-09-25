@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { PaymentInitiateRequest, PaymentInitiateResponse } from "@/services/iyzico";
 import { ShippingMethod } from "@/types/domains/shipping_method";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { toast } from "sonner";
 import CheckoutForm from "./components/CheckoutForm";
 import ThreeDSModal from "./components/ThreeDSModal";
@@ -25,6 +25,9 @@ function CheckoutPageInner() {
     const { user, authenticated } = useAppSelector((state) => state.auth);
 
     const [shippingMethods, setShippingMethods] = useState<Record<number, ShippingMethod>>({});
+    const [destinationCountry, setDestinationCountry] = useState<string>("United States");
+    const destCountryRef = useRef(destinationCountry);
+    destCountryRef.current = destinationCountry;
     const [threeDSHtml, setThreeDSHtml] = useState<string | null>(null);
 
     // Show toast if redirected back from iyzico callback with a failure
@@ -58,15 +61,19 @@ function CheckoutPageInner() {
 
     useEffect(() => {
         if (effectiveItems.length === 0) return;
+        // Drop the previous quote so a stale rate can never be charged for a new country.
+        setShippingMethods({});
+        const requestedFor = destinationCountry;
         for (const item of effectiveItems) {
-            getShippingMethodByVariant.request(item.productVariantId).onSuccess((shippingMethod) => {
+            getShippingMethodByVariant.request(item.productVariantId, destinationCountry).onSuccess((shippingMethod) => {
+                if (destCountryRef.current !== requestedFor) return;
                 setShippingMethods((prev) => ({
                     ...prev,
                     [item.cartItemId]: shippingMethod,
                 }));
             });
         }
-    }, [effectiveItems]);
+    }, [effectiveItems, destinationCountry]);
 
     const handlePaymentSubmit = useCallback(
         (payload: PaymentInitiateRequest) => {
@@ -99,6 +106,7 @@ function CheckoutPageInner() {
                     onSubmit={handlePaymentSubmit}
                     currentAddress={user?.address}
                     isAuthenticated={authenticated}
+                    onDestinationCountryChange={setDestinationCountry}
                 />
             </div>
 

@@ -18,6 +18,12 @@ export const deleteShippingMethod: ServiceFunction<[shippingMethodId: number], v
     return servicesApiClient.delete(`/shipping-methods/${shippingMethodId}`);
 };
 
-export const getShippingMethodByVariantId: ServiceFunction<[productVariantId: number], ShippingMethod> = (productVariantId) => {
-   return servicesApiClient.get(`/shipping-methods/by-variant/${productVariantId}`);
+export const getShippingMethodByVariantId: ServiceFunction<
+    [productVariantId: number, destinationCountry?: string],
+    ShippingMethod
+> = (productVariantId, destinationCountry) => {
+    const query = destinationCountry
+        ? `?country=${encodeURIComponent(destinationCountry)}`
+        : "";
+    return servicesApiClient.get(`/shipping-methods/by-variant/${productVariantId}${query}`);
 };

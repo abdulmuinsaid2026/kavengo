@@ -82,6 +82,7 @@ async function forwardRequest(
     '/auth/social-login',
     '/auth/check-email',
     '/shipping-methods',
+    '/reviews',
     '/iyzico/initiate',
     '/iyzico/confirm',
     '/shop-orders/track',

@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ShippingMethod } from "@/types/domains/shipping_method";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -97,6 +97,8 @@ interface CheckoutFormProps {
     onSubmit: (data: PaymentInitiateRequest) => void;
     currentAddress?: Address;
     isAuthenticated?: boolean;
+    /** Lets the page refetch shipping rates when the destination country changes. */
+    onDestinationCountryChange?: (country: string) => void;
 }
 
 export default function CheckoutForm({
@@ -107,6 +109,7 @@ export default function CheckoutForm({
     subtotalAmount,
     currentAddress,
     isAuthenticated = false,
+    onDestinationCountryChange,
 }: CheckoutFormProps) {
     const isGuestUser = !isAuthenticated;
 
@@ -151,6 +154,38 @@ export default function CheckoutForm({
 
     const cardNumber = form.watch("cardNumber");
     const cardType = detectCardType(cardNumber);
+
+    // Destination actually being shipped to — picks the shipping rate and the ETA.
+    const watchedCountry = form.watch("shippingAddress.country");
+    const addressType = form.watch("addressType");
+    const effectiveCountry =
+        !isGuestUser && addressType === "current" && currentAddress?.country
+            ? currentAddress.country
+            : watchedCountry || "United States";
+
+    useEffect(() => {
+        onDestinationCountryChange?.(effectiveCountry);
+    }, [effectiveCountry, onDestinationCountryChange]);
+
+    const deliveryEstimate = useMemo(() => {
+        let min = Number.POSITIVE_INFINITY;
+        let max = Number.NEGATIVE_INFINITY;
+        for (const item of cartItems) {
+            const option = shippingMethods[item.cartItemId]?.shippingOptions?.[0];
+            if (!option) continue;
+            min = Math.min(min, option.estimatedDeliveryMin);
+            max = Math.max(max, option.estimatedDeliveryMax);
+        }
+        return Number.isFinite(max) ? { min, max } : undefined;
+    }, [cartItems, shippingMethods]);
+
+    const originCountry = useMemo(() => {
+        for (const item of cartItems) {
+            const origin = shippingMethods[item.cartItemId]?.originCountry;
+            if (origin) return origin;
+        }
+        return undefined;
+    }, [cartItems, shippingMethods]);
 
     const formatCardNumber = (value: string) => {
         const v = value.replace(/\D/g, "").slice(0, 16);
@@ -235,8 +270,8 @@ export default function CheckoutForm({
                 shippingMethodId: shippingMethods[item.cartItemId]!.shippingMethodId,
                 price: item.price,
                 quantity: item.quantity,
-                productName: (item as { productName?: string }).productName ?? "Product",
-                categoryName: "General",
+                productName: item.title || "Product",
+                categoryName: "",
             })),
             shippingAddressId,
             shippingAddress: shippingAddressObj,
@@ -594,7 +629,14 @@ export default function CheckoutForm({
                                         <Truck className="h-4 w-4 text-primary" />
                                         <span className="font-medium text-sm">Estimated Delivery</span>
                                     </div>
-                                    <p className="text-sm text-muted-foreground">5-7 business days</p>
+                                    {deliveryEstimate ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            {deliveryEstimate.min}–{deliveryEstimate.max} days
+                                            {originCountry ? ` · Ships from ${originCountry}` : ""}
+                                        </p>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">Calculating shipping estimate…</p>
+                                    )}
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-4">
