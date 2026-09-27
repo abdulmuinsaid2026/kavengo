@@ -39,6 +39,10 @@ export interface OrderDetails {
     carrierName: string;
     trackingNumber: string;
     orderStatus: OrderStatus;
+    totalAmount?: number;
+    shippingAmount?: number;
+    lastFourDigits?: string;
+    cardAssociation?: string;
 }
 
 

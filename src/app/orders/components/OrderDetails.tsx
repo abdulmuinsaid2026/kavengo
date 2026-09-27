@@ -50,8 +50,8 @@ const OrderDetailView: React.FC<OrderDetailViewProps> = ({ order }) => {
     const statusStyle = getStatusStyle(order.orderStatus);
 
     const subtotal = order.orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const shippingCost = order.shippingMethod?.shippingOptions?.[0]?.costFirstItem ?? 0;
-    const total = subtotal + shippingCost;
+    const shippingCost = order.shippingAmount ?? (order.shippingMethod?.shippingOptions?.[0]?.costFirstItem ?? 0);
+    const total = order.totalAmount ?? (subtotal + shippingCost);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -96,7 +96,7 @@ const OrderDetailView: React.FC<OrderDetailViewProps> = ({ order }) => {
                             <span className="px-2 py-1 bg-gray-100 rounded-md truncate max-w-[80px]">Origin</span>
                             <div className="border-t-2 border-dashed border-gray-300 flex-grow" />
                             <span className="px-2 py-1 bg-gray-100 rounded-md truncate max-w-[80px]">
-                                {order.shippingAddress?.city || "Destination"}
+                                {order.shippingAddress?.country || "Destination"}
                             </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -224,9 +224,11 @@ const OrderDetailView: React.FC<OrderDetailViewProps> = ({ order }) => {
                             </span>
                         </div>
                         <p className="text-gray-500 text-sm mb-5">
-                            {order.paymentMethod
-                                ? `•••• •••• •••• ${order.paymentMethod.last4} — ${order.paymentMethod.cardHolderName}`
-                                : "Payment details unavailable"}
+                            {order.lastFourDigits
+                                ? `•••• •••• •••• ${order.lastFourDigits}${order.cardAssociation ? ` · ${order.cardAssociation}` : ''}`
+                                : order.paymentMethod
+                                    ? `•••• •••• •••• ${order.paymentMethod.last4} — ${order.paymentMethod.cardHolderName}`
+                                    : "Payment details unavailable"}
                         </p>
 
                         <div className="space-y-2 mb-4">
