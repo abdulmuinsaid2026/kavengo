@@ -68,9 +68,8 @@ async function forwardRequest(
   retryCount = 0
 ): Promise<NextResponse> {
   const MAX_RETRIES = 2;
-  const REQUEST_TIMEOUT = 10000; // 10 seconds
-
   const { path, method = 'GET', body } = payload;
+  const REQUEST_TIMEOUT = method === 'GET' ? 20000 : 60000;
   const token = (await cookies()).get('token')?.value;
 
   // Skip auth for public endpoints
@@ -134,7 +133,8 @@ async function forwardRequest(
       signal: controller.signal,
       timeout: REQUEST_TIMEOUT,
     }).catch((err: AxiosError) => {
-      return err.response;
+      if (err.response) return err.response;
+      throw err;
     });
 
     clearTimeout(timeoutId);
@@ -245,14 +245,19 @@ async function forwardRequest(
     clearTimeout(timeoutId);
     recordFailure(circuitKey);
 
-    if (axios.isCancel(error) || error instanceof DOMException) {
-      return new NextResponse(JSON.stringify({ message: 'Request timeout' }), {
-        status: 504,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const isTimeout =
+      axios.isCancel(error) ||
+      error instanceof DOMException ||
+      (axios.isAxiosError(error) && (error.code === 'ECONNABORTED' || error.code === 'ERR_CANCELED'));
+
+    if (isTimeout) {
+      return new NextResponse(
+        JSON.stringify({ message: 'The request took too long. Please try again.' }),
+        { status: 504, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    if (retryCount < MAX_RETRIES) {
+    if (retryCount < MAX_RETRIES && method === 'GET') {
       await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
       return forwardRequest(payload, retryCount + 1);
     }

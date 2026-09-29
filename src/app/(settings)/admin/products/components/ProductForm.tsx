@@ -303,8 +303,10 @@ export default function ProductForm({
          current.variationIds.forEach((vId) => categoryVariationIdSet.add(vId));
          current = current.parentCategory;
       }
-      return Array.from(categoryVariationIdSet).sort();
-   }, [selectedCategoryDetails]);
+      return Array.from(categoryVariationIdSet)
+         .filter((vId) => indexedVariations[vId])
+         .sort();
+   }, [selectedCategoryDetails, indexedVariations]);
    const productAttributes = productForm.watch("attributes");
    const productImages = productForm.watch("images");
 
@@ -339,7 +341,11 @@ export default function ProductForm({
 
    const updateVariantsAndAttributes = useCallback(
       (categoryDetails: CategoryData) => {
-         const variants = getVariantsFromVariations(getCategoryVariations(categoryDetails).map((vId) => indexedVariations[vId]));
+          const variants = getVariantsFromVariations(
+             getCategoryVariations(categoryDetails)
+                .map((vId) => indexedVariations[vId])
+                .filter((v): v is Variation => Boolean(v))
+          );
          const productCode = productForm.getValues("code");
          variants.forEach(
             (v) =>
@@ -1011,11 +1017,11 @@ export default function ProductForm({
                            <TableHeader className="sticky top-0 z-10 bg-background shadow-[inset_0_-1px_0_0_hsl(var(--border))]">
                               <TableRow>
                                  <TableHead className="w-12">#</TableHead>
-                                 {categoryVariationIds.map((vId) => (
-                                    <TableHead key={vId} className="min-w-36">
-                                       {indexedVariations[vId].name}
-                                    </TableHead>
-                                 ))}
+                                  {categoryVariationIds.map((vId) => (
+                                     <TableHead key={vId} className="min-w-36">
+                                        {indexedVariations[vId]?.name}
+                                     </TableHead>
+                                  ))}
                                  <TableHead className="min-w-44">SKU</TableHead>
                                  <TableHead className="min-w-28">Price</TableHead>
                                  <TableHead className="min-w-28">Stock</TableHead>
@@ -1438,11 +1444,11 @@ function getVariantsFromVariations(variations: Variation[]): ProductFormData["va
    if (!variations.length) return [];
 
    const variation = variations[0];
-   const options = variation.variationOptions;
+   const options = variation.variationOptions || [];
    let variantProperties = options.map((o) => [o.variationOptionId]);
    for (let i = 1; i < variations.length; i++) {
       const varI = variations[i];
-      const varIOptions = varI.variationOptions;
+      const varIOptions = varI.variationOptions || [];
       variantProperties = variantProperties.flatMap((variant) => varIOptions.map((o) => [...variant, o.variationOptionId]));
    }
 
